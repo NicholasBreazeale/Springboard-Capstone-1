@@ -1,0 +1,45 @@
+{% set user_id = session["user_id"]|string if "user_id" in session else "-" %}
+
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>{% block title %}TITLE{% endblock %}</title>
+
+	<link rel="stylesheet" href="https://unpkg.com/bootstrap/dist/css/bootstrap.css">
+	<script src="https://unpkg.com/jquery"></script>
+	<script src="https://unpkg.com/bootstrap"></script>
+
+	<link rel="stylesheet" href="{{ url_for('static', filename='stylesheets/style.css') }}">
+
+	<link rel="shortcut icon" href="/static/favicon.svg">
+</head>
+<body>
+	<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+		<a class="navbar-brand" href="/">HDB</a>
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupported Content" aria-expanded="false" aria-label="Toggle navigation">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+		<div class="collapse navbar-collapse" id="navbarSupportedContent">
+			<ul class="navbar-nav ml-auto">
+				{%- if user_id != "-" %}
+				<li class="nav-item{% if request.path == '/user/'+user_id %} active{% endif %}">
+					<a class="nav-link" href="/user/{{ user_id }}">Profile</a>
+				</li>
+				<form method="POST" action="/logout" class="nav-item">
+					<button class="nav-link no-background">Logout</button>
+				</form>
+				{% else %}
+				<li class="nav-item{% if request.path == '/register' %} active{% endif %}">
+					<a class="nav-link" href="/register">Register</a>
+				</li>
+				<li class="nav-item{% if request.path == '/login' %} active{% endif %}">
+					<a class="nav-link" href="/login">Login</a>
+				</li>
+				{%- endif %}
+			</ul>
+		</div>
+	</nav>
+	{% block content %}CONTENT{% endblock -%}
+</body>
+</html>

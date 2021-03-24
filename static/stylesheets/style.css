@@ -1,0 +1,8 @@
+.no-background {
+	background: none;
+	border: none;
+}
+
+.profile-img {
+	max-width: 80%;
+}
