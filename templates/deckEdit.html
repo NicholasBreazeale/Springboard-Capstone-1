@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Deck Editor{% endblock %}
+
+{% block content -%}
+<div class="container">
+	<div class="row">
+		<div class="col border-right">
+			<h3>Current Deck</h3>
+			<ul id="currentDeck">
+				{%- for card in cards %}
+				<li><a target="_blank" href="/cards/{{ card.id }}">{{ card.name }}</a> x {{ card.count }} <button class="card-remove">-</button></li>
+				{% endfor -%}
+			</ul>
+		</div>
+		<div class="col">
+			<h3>Card Search</h3>
+			<form id="searchForm" class="input-group">
+				<input type="search" id="searchQuery" class="form-control" placeholder="Card Name" />
+				<div class="input-group-append">
+					<input type="submit" class="btn btn-primary" value="Search" />
+				</div>
+			</form>
+			<ul id="searchResults"></ul>
+		</div>
+	</div>
+</div>
+<script src="/static/scripts/editor.js"></script>
+{%- endblock %}

@@ -31,20 +31,19 @@ class Deck(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    hero_class = db.Column(db.Integer, nullable=False)
     title = db.Column(db.Text, unique=True, nullable=False)
     description = db.Column(db.Text)
     public = db.Column(db.Boolean)
     date = db.Column(db.DateTime, nullable=False)
 
     user = db.relationship("User", backref="decks")
-    cards = db.relationship("Card")
+    cards = db.relationship("DeckCards")
 
-class Card(db.Model):
-    __tablename__ = "cards"
+class DeckCards(db.Model):
+    __tablename__ = "deckCards"
 
     deck_id = db.Column(db.Integer, db.ForeignKey("decks.id"), primary_key=True)
-    card_id = db.Column(db.Integer, primary_key=True, autoincrement=False)
+    card_id = db.Column(db.Text, primary_key=True)
     card_count = db.Column(db.Integer, nullable=False)
 
 class Review(db.Model):
