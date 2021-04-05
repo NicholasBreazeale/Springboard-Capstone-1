@@ -9,7 +9,7 @@
 			<h3>Current Deck</h3>
 			<ul id="currentDeck">
 				{%- for card in cards %}
-				<li><a target="_blank" href="/cards/{{ card.id }}">{{ card.name }}</a> x {{ card.count }} <button class="card-remove">-</button></li>
+				<li id="deck-{{ card.id }}"><a target="_blank" href="/cards/{{ card.id }}">{{ card.name }}</a> <span>x {{ card.count }}</span> <button class="card-remove">-</button></li>
 				{% endfor -%}
 			</ul>
 		</div>

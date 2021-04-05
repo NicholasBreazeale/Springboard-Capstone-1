@@ -88,7 +88,7 @@ def deck_new():
         return redirect(f"/deck/{deck.id}/edit")
     return render_template("deckNew.html", form=form)
 
-@app.route("/deck/<int:deck_id>/edit", methods=["GET"])
+@app.route("/deck/<int:deck_id>/edit", methods=["GET", "POST", "DELETE"])
 def deck_edit(deck_id):
     """Edit a deck if a user is the owner."""
 
@@ -99,14 +99,44 @@ def deck_edit(deck_id):
     if deck.user_id != session["user_id"]:
         return 401
 
-    deck_cards = []
-    for card in deck.cards:
-        card_request = requests.get(f"https://omgvamp-hearthstone-v1.p.rapidapi.com/cards/{card.id}", headers=api_request_header)
-        if not card_request.ok:
-            return 500
-        card_json = card_request.json()
-        deck_cards.append({"id": card_json.id, "name": card_json.name, "count": card.count})
-    return render_template("deckEdit.html", cards=deck_cards)
+    # Render the editor UI
+    if request.method == "GET":
+        deck_cards = []
+        session["deck_id"] = deck_id
+        # Fetch the data for each card in the deck
+        for card in deck.cards:
+            card_request = requests.get(f"https://omgvamp-hearthstone-v1.p.rapidapi.com/cards/{card.card_id}", headers=api_request_header)
+            if not card_request.ok:
+                return 500
+            card_json = card_request.json()[0]
+            deck_cards.append({"id": card.card_id, "name": card_json["name"], "count": card.count})
+        return render_template("deckEdit.html", cards=deck_cards)
+
+    # Get the card ID parameter from the request and fetch the card from the API
+    card_id = request.args["cardId"]
+    card_request = requests.get(f"https://omgvamp-hearthstone-v1.p.rapidapi.com/cards/{card_id}", headers=api_request_header)
+    if not card_request.ok:
+        return card_request.json(), card_request.status_code
+    deck_card = DeckCards.query.filter_by(deck_id=deck_id, card_id=card_id).first()
+
+    # Add a card to the current deck
+    if request.method == "POST":
+        if deck_card:
+            deck_card.count += 1
+        else:
+            deck_card = DeckCards(deck_id=deck_id, card_id=card_id, count=1)
+            db.session.add(deck_card)
+        db.session.commit()
+        return {"success": 200, "message": "Card added to deck.", "card": {"id": card_id, "name": card_request.json()[0]["name"], "count": deck_card.count}}, 200
+    # Remove a card from the current deck
+    else:
+        if not deck_card:
+            return {"error": 404, "message": "Card not in deck."}, 404
+        deck_card.count -= 1
+        if deck_card.count <= 0:
+            db.session.delete(deck_card)
+        db.session.commit()
+        return {"success": 200, "message": "Card removed from deck.", "card": {"id": card_id, "name": card_request.json()[0]["name"], "count": deck_card.count}}, 200
 
 ##############################################################################
 # API routes
@@ -117,41 +147,3 @@ def card_search():
 
     response = requests.get(f"https://omgvamp-hearthstone-v1.p.rapidapi.com/cards/search/{request.args.get('q')}", headers=api_request_header)
     return jsonify(response.json())
-
-@app.route("/api/deck/edit", methods=["POST", "DELETE"])
-def api_edit():
-    """Add or remove a card from a deck."""
-
-    form = CardDeck(request.args, meta={"csrf": False})
-    if form.validate():
-        # Check that the deck exists
-        deck = Deck.query.get(form.deck_id.data)
-        if not deck:
-            return {"error": 404, "message": "Deck not found."}, 404
-        # Check deck ownership
-        if deck.user_id != session["user_id"]:
-            return {"error": 401, "message": "You are not the deck owner."}, 401
-        # Check that the card ID is valid
-        card_request = requests.get(f"https://omgvamp-hearthstone-v1.p.rapidapi.com/cards/{card_id}", headers=api_request_header)
-        if not card_request.ok:
-            return card_request.json(), card_request.status_code
-        # Get the deck-card pair if it exists
-        deck_card = DeckCards.query.filter_by(deck_id=form.deck_id.data, card_id=form.card_id.data)
-
-        # Add card to deck
-        if request.method == "POST":
-            if deck_card:
-                deck_card.count += 1
-            else:
-                deck_card = DeckCards(deck_id=form.deck_id.data, card_id=form.card_id.data, count=1)
-                db.session.add(deck_card)
-            db.session.commit()
-            return {"success": 200, "message": "Card added to deck."}
-        # Delete card from deck
-        else:
-            if deck_card.count == 1:
-                db.session.delete(deck_card)
-            else:
-                deck_card.count -= 1
-            db.session.commit()
-            return {"success": 200, "message": "Card removed from deck."}

@@ -44,7 +44,7 @@ class DeckCards(db.Model):
 
     deck_id = db.Column(db.Integer, db.ForeignKey("decks.id"), primary_key=True)
     card_id = db.Column(db.Text, primary_key=True)
-    card_count = db.Column(db.Integer, nullable=False)
+    count = db.Column(db.Integer, nullable=False)
 
 class Review(db.Model):
     __tablename__ = "reviews"
