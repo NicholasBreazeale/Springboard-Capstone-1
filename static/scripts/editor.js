@@ -9,7 +9,7 @@ $("#searchForm").on("submit", event => {
 	const searchString = document.getElementById("searchQuery").value.trim();
 	if (searchString) {
 		// Fetch new results
-		fetch(`/api/cards/search?q=${searchString}`).then(response => {
+		fetch(`/cards/search?q=${searchString}`).then(response => {
 			if (response.ok) {
 				response.json().then(data => {
 					for (const card of data) {
@@ -27,7 +27,7 @@ $("#searchForm").on("submit", event => {
 
 // Add card to the deck list
 $("#searchResults").on("click", ".card-add", function(event) {
-	fetch(`?cardId=${event.target.parentElement.id.substring(7)}`, {method: "POST"}).then(response => {
+	fetch(`?cardId=${event.target.parentElement.id.substring(7)}&op=add`, {method: "PATCH"}).then(response => {
 		if (response.ok) {
 			response.json().then(data => {
 				const cardElem = $("#deck-"+data.card.id);
@@ -43,7 +43,7 @@ $("#searchResults").on("click", ".card-add", function(event) {
 
 // Remove card from the deck list
 $("#currentDeck").on("click", ".card-remove", function(event) {
-	fetch(`?cardId=${event.target.parentElement.id.substring(5)}`, {method: "DELETE"}).then(response => {
+	fetch(`?cardId=${event.target.parentElement.id.substring(5)}&op=rem`, {method: "PATCH"}).then(response => {
 		if (response.ok) {
 			response.json().then(data => {
 				const cardElem = $("#deck-"+data.card.id);

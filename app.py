@@ -3,7 +3,7 @@ import os
 import requests
 from flask import Flask, flash, jsonify, redirect, render_template, request, session
 
-from forms import LoginForm, RegisterForm, DeckForm, DeckCard
+from forms import LoginForm, RegisterForm, DeckForm, DeckCardForm
 from models import db, connect_db, User, Deck, DeckCards, Review
 
 app = Flask(__name__)
@@ -69,6 +69,9 @@ def profile(user_id):
 
     return render_template("user.html", user=User.query.get_or_404(user_id))
 
+###############################################################
+# Card routes
+
 @app.route("/cards/<card_id>", methods=["GET"])
 def card_detail(card_id):
     """Get individual card data from the API."""
@@ -76,7 +79,17 @@ def card_detail(card_id):
     response = requests.get(f"https://omgvamp-hearthstone-v1.p.rapidapi.com/cards/{card_id}", headers=api_request_header)
     return render_template("card.html", card=response.json()[0])
 
-@app.route("/deck/new", methods=["GET", "POST"])
+@app.route("/cards/search", methods=["GET"])
+def card_search():
+    """Send the search query to the API and return its response."""
+
+    response = requests.get(f"https://omgvamp-hearthstone-v1.p.rapidapi.com/cards/search/{request.args.get('q')}", headers=api_request_header)
+    return jsonify(response.json())
+
+###############################################################
+# Deck routes
+
+@app.route("/deck", methods=["GET", "POST"])
 def deck_new():
     """Form for creating a new deck."""
 
@@ -88,7 +101,7 @@ def deck_new():
         return redirect(f"/deck/{deck.id}/edit")
     return render_template("deckNew.html", form=form)
 
-@app.route("/deck/<int:deck_id>/edit", methods=["GET", "POST", "DELETE"])
+@app.route("/deck/<int:deck_id>", methods=["GET", "PATCH"])
 def deck_edit(deck_id):
     """Edit a deck if a user is the owner."""
 
@@ -96,31 +109,44 @@ def deck_edit(deck_id):
         redirect("/")
 
     deck = Deck.query.get_or_404(deck_id)
-    if deck.user_id != session["user_id"]:
-        return 401
 
-    # Render the editor UI
+    # Render the deck
     if request.method == "GET":
+        # Private decks may only be viewed by their owner
+        if deck.public == False and deck.user_id != session["user_id"]:
+            return 401
+
+        # Fetch the data for each card in the deck
         deck_cards = []
         session["deck_id"] = deck_id
-        # Fetch the data for each card in the deck
         for card in deck.cards:
             card_request = requests.get(f"https://omgvamp-hearthstone-v1.p.rapidapi.com/cards/{card.card_id}", headers=api_request_header)
             if not card_request.ok:
                 return 500
             card_json = card_request.json()[0]
             deck_cards.append({"id": card.card_id, "name": card_json["name"], "count": card.count})
-        return render_template("deckEdit.html", cards=deck_cards)
+
+        # If a deck is public, display the deck info, else display the editor
+        return render_template("deck.html" if deck.public else "deckEdit.html", cards=deck_cards)
+
+    # Only the deck owner may change the deck
+    if deck.user_id != session["user_id"]:
+        return 401
+
+    # Validate the request arguments
+    form = DeckCardForm(request.args, meta={"csrf": False})
+    if not form.validate():
+        return 400
 
     # Get the card ID parameter from the request and fetch the card from the API
-    card_id = request.args["cardId"]
+    card_id = form.cardId.data
     card_request = requests.get(f"https://omgvamp-hearthstone-v1.p.rapidapi.com/cards/{card_id}", headers=api_request_header)
     if not card_request.ok:
         return card_request.json(), card_request.status_code
     deck_card = DeckCards.query.filter_by(deck_id=deck_id, card_id=card_id).first()
 
     # Add a card to the current deck
-    if request.method == "POST":
+    if form.op.data == "add":
         if deck_card:
             deck_card.count += 1
         else:
@@ -137,13 +163,3 @@ def deck_edit(deck_id):
             db.session.delete(deck_card)
         db.session.commit()
         return {"success": 200, "message": "Card removed from deck.", "card": {"id": card_id, "name": card_request.json()[0]["name"], "count": deck_card.count}}, 200
-
-##############################################################################
-# API routes
-
-@app.route("/api/cards/search", methods=["GET"])
-def card_search():
-    """Send the search query to the API and return its response."""
-
-    response = requests.get(f"https://omgvamp-hearthstone-v1.p.rapidapi.com/cards/search/{request.args.get('q')}", headers=api_request_header)
-    return jsonify(response.json())

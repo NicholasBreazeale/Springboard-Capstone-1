@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, IntegerField, TextAreaField
+from wtforms import StringField, PasswordField, SelectField, TextAreaField
 from wtforms.validators import InputRequired, Length, Optional, URL
 
 class RegisterForm(FlaskForm):
@@ -15,6 +15,6 @@ class DeckForm(FlaskForm):
     title = StringField("Title", validators=[InputRequired(), Length(min=4, message="Must be at least %(min)d characters.")])
     description = TextAreaField("Description", validators=[Optional()])
 
-class DeckCard(FlaskForm):
-    card_id = StringField("Card ID", validators=[InputRequired()])
-    deck_id = IntegerField("Deck ID", validators=[InputRequired()])
+class DeckCardForm(FlaskForm):
+    cardId = StringField("Card ID", validators=[InputRequired()])
+    op = SelectField("Operation", choices=[("add", "Add"), ("rem", "Remove")], validators=[InputRequired()])

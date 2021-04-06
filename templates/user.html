@@ -14,10 +14,10 @@
 		<div>
 			<div>
 				<h3>My Decks</h3>
-				<a href="/deck/new"><button class="btn btn-primary">New Deck</button></a>
+				<a href="/deck"><button class="btn btn-primary">New Deck</button></a>
 				<ul>
 					{%- for deck in user.decks %}
-					<li><a href="/deck/{{ deck.id }}/edit">{{ deck.title }}</a></li>
+					<li><a href="/deck/{{ deck.id }}">{{ deck.title }}</a></li>
 					{% endfor %}
 				</ul>
 			</div>
