@@ -83,7 +83,15 @@ def card_detail(card_id):
 def card_search():
     """Send the search query to the API and return its response."""
 
-    response = requests.get(f"https://omgvamp-hearthstone-v1.p.rapidapi.com/cards/search/{request.args.get('q')}", headers=api_request_header)
+    # "q" argument must be included
+    if "q" not in request.args:
+        return {"error": 400, "message": "'q' argument not specified."}, 400
+    # and must not be all whitespace
+    search_query = request.args["q"].strip()
+    if search_query == "":
+        return {"error": 400, "message": "Only whitespace was provided."}, 400
+
+    response = requests.get(f"https://omgvamp-hearthstone-v1.p.rapidapi.com/cards/search/{search_query}", headers=api_request_header)
     return jsonify(response.json())
 
 ###############################################################
