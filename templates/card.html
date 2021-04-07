@@ -3,5 +3,19 @@
 {% block title %}{{ card['name'] }}{% endblock %}
 
 {% block content -%}
-<img src="{{ card['img'] }}" />
+<div class="row">
+	<div class="mx-auto center-text">
+		<img src="{{ card['img'] if 'img' in card else 'https://d15f34w2p8l1cc.cloudfront.net/hearthstone/f7d4aa4cdcf78441cc8d0bae954a55a271ad9cedc89c611b8fc0cf0859a8a32f.png'}}" />
+		<h3>{{ card['name'] }}</h3>
+		<small>{{ card['type'] }}</small>
+		<p class="border">{{ card['text']|replace('\\n', '<br />')|safe }}</p>
+		<p>
+			{%- set separator = False %}
+			{%- if 'cost' in card %}<b>Cost:</b> {{ card['cost'] }}{% set separator = True %}{% endif -%}
+			{%- if 'attack' in card %}{% if separator %} | {% endif %}<b>Attack:</b> {{ card['attack'] }}{% set separator = True %}{% endif -%}
+			{%- if 'health' in card %}{% if separator %} | {% endif %}<b>Health:</b> {{ card['health'] }}{% set separator = True %}{% endif -%}
+			{%- if 'durability' in card %}{% if separator %} | {% endif %}<b>Durability:</b> {{ card['durability'] }}{% set separator = True %}{% endif -%}
+		</p>
+	</div>
+</div>
 {%- endblock %}
