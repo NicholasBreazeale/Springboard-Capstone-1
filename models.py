@@ -45,15 +45,3 @@ class DeckCards(db.Model):
     deck_id = db.Column(db.Integer, db.ForeignKey("decks.id"), primary_key=True)
     card_id = db.Column(db.Text, primary_key=True)
     count = db.Column(db.Integer, nullable=False)
-
-class Review(db.Model):
-    __tablename__ = "reviews"
-
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    deck_id = db.Column(db.Integer, db.ForeignKey("decks.id"), nullable=False)
-    stars = db.Column(db.Integer, nullable=False)
-    comments = db.Column(db.Text)
-    date = db.Column(db.DateTime, nullable=False)
-
-    user = db.relationship("User", backref="reviews")

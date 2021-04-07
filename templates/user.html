@@ -21,14 +21,6 @@
 					{% endfor %}
 				</ul>
 			</div>
-			<div>
-				<h3>Reviews</h3>
-				<ul>
-					{%- for review in user.reviews %}
-					<li><a href="/deck/{{ review.deck.id }}#{{ review.id }}">{{ review.deck.title }}</a></li>
-					{% endfor %}
-				</ul>
-			</div>
 		</div>
 	</div>
 </div>

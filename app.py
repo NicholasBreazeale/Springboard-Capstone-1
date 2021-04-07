@@ -4,7 +4,7 @@ import requests
 from flask import Flask, flash, jsonify, redirect, render_template, request, session
 
 from forms import LoginForm, RegisterForm, DeckForm, DeckCardForm
-from models import db, connect_db, User, Deck, DeckCards, Review
+from models import db, connect_db, User, Deck, DeckCards
 
 app = Flask(__name__)
 
