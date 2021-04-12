@@ -3,7 +3,7 @@ import os
 import requests
 from flask import Flask, flash, jsonify, redirect, render_template, request, session
 
-from forms import LoginForm, RegisterForm, DeckForm, DeckCardForm
+from forms import LoginForm, RegisterForm, DeckNewForm, DeckDetailForm, DeckCardForm
 from models import db, connect_db, User, Deck, DeckCards
 
 app = Flask(__name__)
@@ -67,7 +67,7 @@ def logout():
 def profile(user_id):
     """Display user profile."""
 
-    return render_template("user.html", user=User.query.get_or_404(user_id))
+    return render_template("user.html", user=User.query.get_or_404(user_id), current_user=(session["user_id"]==user_id))
 
 ###############################################################
 # Card routes
@@ -101,20 +101,64 @@ def card_search():
 def deck_new():
     """Form for creating a new deck."""
 
-    form = DeckForm()
+    # Must be logged in to create a deck
+    if "user_id" not in session:
+        return redirect("/")
+
+    form = DeckNewForm()
     if form.validate_on_submit():
-        deck = Deck(user_id=session["user_id"], title=form.title.data, description=form.description.data, public=False, date=datetime.datetime.utcnow())
+        deck = Deck(user_id=session["user_id"], title=form.title.data, description=form.description.data, public=False)
         db.session.add(deck)
         db.session.commit()
-        return redirect(f"/deck/{deck.id}/edit")
+        return redirect(f"/deck/{deck.id}")
     return render_template("deckNew.html", form=form)
+
+@app.route("/deck/<int:deck_id>/detail", methods=["GET", "POST"])
+def deck_detail_form(deck_id):
+    """Show the form for editing deck details."""
+
+    # User must be logged in and the owner of the current deck
+    if "user_id" not in session:
+        return redirect("/")
+    deck = Deck.query.get_or_404(deck_id)
+    if deck.user_id != session["user_id"]:
+        return {"error": 401, "message": "You are not the deck's owner."}, 401
+
+    form = DeckDetailForm()
+
+    # GET method
+    if request.method == "GET":
+        # If the deck is public, redirect GET requests to the deck view
+        if deck.public:
+            return redirect(f"/deck/{deck.id}")
+        # Populate the from with the current data
+        form.title.data = deck.title
+        form.description.data = deck.description
+        return render_template("deckDetail.html", form=form)
+    # PUT method
+    else:
+        # Public decks may not be edited
+        if deck.public:
+            return {"error": 401, "message": "Public decks may not be edited."}, 401
+        # Validate form data
+        if not form.validate():
+            return render_template("deckDetail.html", form=form)
+        # Update deck details with form data
+        deck.title = form.title.data
+        deck.description = form.description.data
+        deck.public = form.public.data
+        if deck.public:
+            deck.date = datetime.datetime.utcnow()
+        db.session.commit()
+        # If deck was made public, go to its view, otherwise return to the user's profile
+        if deck.public == True:
+            return redirect(f"/deck/{deck.id}")
+        else:
+            return redirect(f"/user/{session['user_id']}")
 
 @app.route("/deck/<int:deck_id>", methods=["GET", "PATCH"])
 def deck_edit(deck_id):
     """Edit a deck if a user is the owner."""
-
-    if "user_id" not in session:
-        redirect("/")
 
     deck = Deck.query.get_or_404(deck_id)
 
@@ -122,7 +166,7 @@ def deck_edit(deck_id):
     if request.method == "GET":
         # Private decks may only be viewed by their owner
         if deck.public == False and deck.user_id != session["user_id"]:
-            return 401
+            return {"error": 401, "message": "This deck is private."}, 401
 
         # Fetch the data for each card in the deck
         deck_cards = []
@@ -130,44 +174,50 @@ def deck_edit(deck_id):
         for card in deck.cards:
             card_request = requests.get(f"https://omgvamp-hearthstone-v1.p.rapidapi.com/cards/{card.card_id}", headers=api_request_header)
             if not card_request.ok:
-                return 500
+                return {"error": 500, "message": "There was an internal server error when trying to fetch the card details."}, 500
             card_json = card_request.json()[0]
             deck_cards.append({"id": card.card_id, "name": card_json["name"], "count": card.count})
 
         # If a deck is public, display the deck info, else display the editor
-        return render_template("deck.html" if deck.public else "deckEdit.html", cards=deck_cards)
-
-    # Only the deck owner may change the deck
-    if deck.user_id != session["user_id"]:
-        return 401
-
-    # Validate the request arguments
-    form = DeckCardForm(request.args, meta={"csrf": False})
-    if not form.validate():
-        return 400
-
-    # Get the card ID parameter from the request and fetch the card from the API
-    card_id = form.cardId.data
-    card_request = requests.get(f"https://omgvamp-hearthstone-v1.p.rapidapi.com/cards/{card_id}", headers=api_request_header)
-    if not card_request.ok:
-        return card_request.json(), card_request.status_code
-    deck_card = DeckCards.query.filter_by(deck_id=deck_id, card_id=card_id).first()
-
-    # Add a card to the current deck
-    if form.op.data == "add":
-        if deck_card:
-            deck_card.count += 1
-        else:
-            deck_card = DeckCards(deck_id=deck_id, card_id=card_id, count=1)
-            db.session.add(deck_card)
-        db.session.commit()
-        return {"success": 200, "message": "Card added to deck.", "card": {"id": card_id, "name": card_request.json()[0]["name"], "count": deck_card.count}}, 200
-    # Remove a card from the current deck
+        return render_template("deck.html" if deck.public else "deckEdit.html", deck=deck, cards=deck_cards)
     else:
-        if not deck_card:
-            return {"error": 404, "message": "Card not in deck."}, 404
-        deck_card.count -= 1
-        if deck_card.count <= 0:
-            db.session.delete(deck_card)
-        db.session.commit()
-        return {"success": 200, "message": "Card removed from deck.", "card": {"id": card_id, "name": card_request.json()[0]["name"], "count": deck_card.count}}, 200
+        # Public decks may not be edited
+        if deck.public:
+            return {"error": 401, "message": "Public decks may not be edited."}, 401
+
+        # Only the deck owner may edit the deck
+        if "user_id" not in session:
+            return redirect("/")
+        if deck.user_id != session["user_id"]:
+            return {"error": 401, "message": "You are not the deck's owner."}, 401
+
+        # Validate the request arguments
+        form = DeckCardForm(request.args, meta={"csrf": False})
+        if not form.validate():
+            return {"error": 400, "message": "Invalid arguments."}, 400
+
+        # Get the card ID parameter from the request and fetch the card from the API
+        card_id = form.cardId.data
+        card_request = requests.get(f"https://omgvamp-hearthstone-v1.p.rapidapi.com/cards/{card_id}", headers=api_request_header)
+        if not card_request.ok:
+            return card_request.json(), card_request.status_code
+        deck_card = DeckCards.query.filter_by(deck_id=deck_id, card_id=card_id).first()
+
+        # Add a card to the current deck
+        if form.op.data == "add":
+            if deck_card:
+                deck_card.count += 1
+            else:
+                deck_card = DeckCards(deck_id=deck_id, card_id=card_id, count=1)
+                db.session.add(deck_card)
+            db.session.commit()
+            return {"success": 200, "message": "Card added to deck.", "card": {"id": card_id, "name": card_request.json()[0]["name"], "count": deck_card.count}}, 200
+        # Remove a card from the current deck
+        else:
+            if not deck_card:
+                return {"error": 404, "message": "Card not in deck."}, 404
+            deck_card.count -= 1
+            if deck_card.count <= 0:
+                db.session.delete(deck_card)
+            db.session.commit()
+            return {"success": 200, "message": "Card removed from deck.", "card": {"id": card_id, "name": card_request.json()[0]["name"], "count": deck_card.count}}, 200

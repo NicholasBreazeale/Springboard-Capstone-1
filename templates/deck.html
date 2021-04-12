@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}{{ deck.title }}{% endblock %}
+
+{% block content -%}
+<div class="container center-text">
+	<h1>{{ deck.title }}</h1>
+		<ul id="currentDeck">
+			{%- for card in cards %}
+			<li id="deck-{{ card.id }}"><a target="_blank" href="/cards/{{ card.id }}">{{ card.name }}</a> <span>x {{ card.count }}</span></li>
+			{% endfor -%}
+		</ul>
+	<p>{{ deck.description }}</p>
+	<p>Creation date: <i>{{ deck.date.strftime("%a %b %d %I:%M%p %Y") }}</i></p>
+</div>
+{%- endblock %}

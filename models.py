@@ -34,7 +34,7 @@ class Deck(db.Model):
     title = db.Column(db.Text, unique=True, nullable=False)
     description = db.Column(db.Text)
     public = db.Column(db.Boolean)
-    date = db.Column(db.DateTime, nullable=False)
+    date = db.Column(db.DateTime)
 
     user = db.relationship("User", backref="decks")
     cards = db.relationship("DeckCards")

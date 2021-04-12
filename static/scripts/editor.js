@@ -13,7 +13,7 @@ $("#searchForm").on("submit", event => {
 			if (response.ok) {
 				response.json().then(data => {
 					for (const card of data) {
-						searchResultsElem.innerHTML += `<li id="search-${card.cardId}" class="cardAdd"><a target="_blank" href="/cards/${card.cardId}">${card.name}</a> <button class="card-add">+</button></li>`;
+						searchResultsElem.innerHTML += `<li id="search-${card.cardId}" class="cardAdd"><a target="_blank" href="/cards/${card.cardId}">${card.name}</a> <button class="btn btn-primary btn-sm card-add font-weight-bold">+</button></li>`;
 					}
 				});
 			} else {
@@ -34,7 +34,7 @@ $("#searchResults").on("click", ".card-add", function(event) {
 				if (cardElem.length) {
 					cardElem.children("span").text(`x ${data.card.count}`);
 				} else {
-					$("#currentDeck").append(`<li id="deck-${data.card.id}"><a target="_blank" href="/cards/${data.card.id}">${data.card.name}</a> <span>x 1</span> <button class="card-remove">-</button></li>`);
+					$("#currentDeck").append(`<li id="deck-${data.card.id}"><a target="_blank" href="/cards/${data.card.id}">${data.card.name}</a> <span>x 1</span> <button class="btn btn-danger btn-sm card-remove font-weight-bold">-</button></li>`);
 				}
 			});
 		}
