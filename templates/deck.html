@@ -11,6 +11,6 @@
 			{% endfor -%}
 		</ul>
 	<p>{{ deck.description }}</p>
-	<p>Creation date: <i>{{ deck.date.strftime("%a %b %d %I:%M%p %Y") }}</i></p>
+	<p>Creation by <i>{{ deck.user.username }}</i> on <i>{{ deck.date.strftime("%a %b %d %I:%M%p %Y") }}</i>.</p>
 </div>
 {%- endblock %}
