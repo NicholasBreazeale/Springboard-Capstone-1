@@ -1,7 +1,7 @@
 import datetime
 import os
 import requests
-from flask import Flask, flash, jsonify, redirect, render_template, request, session
+from flask import Flask, abort, flash, jsonify, redirect, render_template, request, session
 
 from forms import LoginForm, RegisterForm, DeckNewForm, DeckDetailForm, DeckCardForm
 from models import db, connect_db, User, Deck, DeckCards
@@ -107,7 +107,7 @@ def deck_new():
 
     form = DeckNewForm()
     if form.validate_on_submit():
-        deck = Deck(user_id=session["user_id"], title=form.title.data, description=form.description.data, public=False)
+        deck = Deck(user_id=session["user_id"], title=form.title.data, description=form.description.data, date=datetime.datetime.utcnow(), public=False)
         db.session.add(deck)
         db.session.commit()
         return redirect(f"/deck/{deck.id}")
@@ -165,8 +165,8 @@ def deck_edit(deck_id):
     # Render the deck
     if request.method == "GET":
         # Private decks may only be viewed by their owner
-        if deck.public == False and deck.user_id != session["user_id"]:
-            return {"error": 401, "message": "This deck is private."}, 401
+        if deck.public == False and ("user_id" not in session or deck.user_id != session["user_id"]):
+            abort(401)
 
         # Fetch the data for each card in the deck
         deck_cards = []
@@ -174,7 +174,7 @@ def deck_edit(deck_id):
         for card in deck.cards:
             card_request = requests.get(f"https://omgvamp-hearthstone-v1.p.rapidapi.com/cards/{card.card_id}", headers=api_request_header)
             if not card_request.ok:
-                return {"error": 500, "message": "There was an internal server error when trying to fetch the card details."}, 500
+                abort(500)
             card_json = card_request.json()[0]
             deck_cards.append({"id": card.card_id, "name": card_json["name"], "count": card.count})
 
@@ -186,9 +186,7 @@ def deck_edit(deck_id):
             return {"error": 401, "message": "Public decks may not be edited."}, 401
 
         # Only the deck owner may edit the deck
-        if "user_id" not in session:
-            return redirect("/")
-        if deck.user_id != session["user_id"]:
+        if "user_id" not in session or deck.user_id != session["user_id"]:
             return {"error": 401, "message": "You are not the deck's owner."}, 401
 
         # Validate the request arguments

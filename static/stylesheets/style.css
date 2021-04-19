@@ -14,3 +14,11 @@
 .no-margin {
 	margin: 0;
 }
+
+.left-margin {
+	margin-left: 5px;
+}
+
+li {
+	margin: 2px 0;
+}

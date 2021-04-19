@@ -15,12 +15,12 @@
 			<div>
 				<div class="form-inline">
 					<h3 class="no-margin">My Decks</h3>
-					<a href="/deck"><button class="btn btn-primary">New Deck</button></a>
+					<a href="/deck" class="left-margin"><button class="btn btn-primary">New Deck</button></a>
 				</div>
 				<ul>
 					{%- for deck in user.decks %}
 					{% if current_user or deck.public %}
-					<li><a href="/deck/{{ deck.id }}">{{ deck.title }}</a>{% if not deck.public %}<a href="/deck/{{ deck.id }}/detail"><button class="btn btn-primary btn-sm">🔧</button></a>{% endif %}</li>
+					<li><a href="/deck/{{ deck.id }}">{{ deck.title }}</a>{% if not deck.public %} <a href="/deck/{{ deck.id }}/detail"><button class="btn btn-primary btn-sm">🔧</button></a>{% endif %}</li>
 					{% endif %}
 					{% endfor %}
 				</ul>
