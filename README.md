@@ -1,6 +1,6 @@
 # Hearthstone Deck Builder
 
-A webapp for creating, saving, and publishing decks for Hearthstone. Share you public decks with others simply by copying its URL and pasting it elsewhere.
+A webapp for creating, saving, and publishing decks for Hearthstone. Share your public decks with others simply by copying its URL and pasting it elsewhere.
 
 Created in [Visual Studio Code](https://code.visualstudio.com/) using a [Hearthstone Card API](https://rapidapi.com/omgvamp/api/hearthstone).
 
